@@ -85,16 +85,22 @@ function App() {
       <header className="header">
         <div className="header-background"></div>
         <div className="header-content">
-          <div className="header-title-section">
-            <h1>📚 Book Finder</h1>
-            <p className="header-tagline">Discover your next great read</p>
+          <div className="header-brand">
+            <span className="header-logo" aria-hidden="true">📚</span>
+            <div className="header-title-section">
+              <h1>Book Finder</h1>
+              <p className="header-tagline">Discover your next great read</p>
+            </div>
           </div>
-          <button 
+          <button
+            type="button"
             className="dark-mode-toggle"
             onClick={() => setDarkMode(!darkMode)}
-            aria-label="Toggle dark mode"
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={darkMode}
           >
-            {darkMode ? '☀️' : '🌙'}
+            <span className="toggle-icon" aria-hidden="true">{darkMode ? '☀️' : '🌙'}</span>
+            <span className="toggle-label">{darkMode ? 'Light' : 'Dark'}</span>
           </button>
         </div>
       </header>
@@ -120,7 +126,9 @@ function App() {
 
         {!loading && books.length === 0 && !error && (
           <div className="empty-state">
-            <p>🔍 Search for books by title, author, or subject to get started</p>
+            <div className="empty-state-icon" aria-hidden="true">🔍</div>
+            <h2 className="empty-state-title">Start exploring</h2>
+            <p className="empty-state-text">Search by title, author, or subject to find your next read.</p>
           </div>
         )}
       </main>

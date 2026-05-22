@@ -5,26 +5,43 @@
 }
 
 :root {
-  --primary-color: #2563eb;
-  --secondary-color: #1e40af;
-  --danger-color: #dc2626;
-  --success-color: #059669;
-  --warning-color: #f59e0b;
+  --primary-color: #3b6fd9;
+  --primary-hover: #2f5bb8;
+  --secondary-color: #2f5bb8;
+  --danger-color: #dc4c4c;
+  --success-color: #0d9488;
   --bg-light: #ffffff;
-  --bg-gray: #f3f4f6;
-  --text-dark: #111827;
-  --text-gray: #6b7280;
-  --border-color: #e5e7eb;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --bg-gray: #f4f6f9;
+  --text-dark: #1a2332;
+  --text-gray: #5c6b7a;
+  --border-color: #e2e8f0;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.1);
+  --transition: 0.2s ease;
+  --focus-ring: 0 0 0 3px rgba(59, 111, 217, 0.25);
+  --header-gradient-start: #3b6fd9;
+  --header-gradient-end: #2a4f9e;
+  --cover-placeholder-bg: #e8edf4;
+  --cover-placeholder-icon: #94a3b8;
 }
 
 body.dark-mode {
-  --bg-light: #1f2937;
-  --bg-gray: #111827;
-  --text-dark: #f3f4f6;
-  --text-gray: #d1d5db;
-  --border-color: #374151;
+  --bg-light: #1e293b;
+  --bg-gray: #0f172a;
+  --text-dark: #f1f5f9;
+  --text-gray: #94a3b8;
+  --border-color: #334155;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --header-gradient-start: #2a4a8a;
+  --header-gradient-end: #1a3058;
+  --cover-placeholder-bg: #334155;
+  --cover-placeholder-icon: #64748b;
 }
 
 body {
@@ -33,7 +50,9 @@ body {
     sans-serif;
   background-color: var(--bg-gray);
   color: var(--text-dark);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition), color var(--transition);
 }
 
 html {
@@ -54,6 +73,7 @@ button {
   font-family: inherit;
 }
 
-input, select {
+input,
+select {
   font-family: inherit;
 }

@@ -20,9 +20,9 @@ export default function SimilarBooksModal({ books, baseSubject, onClose, onSelec
         <div className="similar-books-grid">
           {books.length > 0 ? (
             books.map((book) => (
-              <BookCard 
-                key={book.id || book.title} 
-                book={book} 
+              <BookCard
+                key={`${book.id ?? book.title}-${book.cover_i ?? book.coverImage ?? ''}`}
+                book={book}
                 onSelect={handleBookSelect}
               />
             ))

@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { validateSearchInput, buildOpenLibraryQuery, formatBookResponse, getRandomBooks } = require('../utils/bookService');
+const { getCoverImageUrl } = require('../utils/coverImage');
 
 const router = express.Router();
 const OPEN_LIBRARY_API = 'https://openlibrary.org';
@@ -113,20 +114,17 @@ router.get('/details/:id', async (req, res) => {
     });
 
     const book = response.data;
-    const coverImage = book.covers?.[0]
-      ? `https://covers.openlibrary.org/b/id/${book.covers[0]}-L.jpg`
-      : book.isbn?.[0]
-      ? `https://covers.openlibrary.org/b/isbn/${book.isbn[0]}-L.jpg`
-      : null;
+    const coverImage = getCoverImageUrl(book, 'L');
 
     const details = {
-      id: book.key,
+      id: book.key?.replace('/works/', '') || id,
       title: book.title || 'Unknown Title',
       description: book.description?.value || book.description || null,
       subjects: book.subjects || [],
       editions: book.editions_count || 0,
       firstPublishYear: book.first_publish_date ? new Date(book.first_publish_date).getFullYear() : null,
       authors: book.authors?.map(a => a.name) || [],
+      cover_i: book.covers?.[0] ?? null,
       coverImage
     };
 

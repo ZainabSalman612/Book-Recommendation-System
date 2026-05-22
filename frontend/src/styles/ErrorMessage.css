@@ -5,7 +5,7 @@
   background: #fee2e2;
   color: #991b1b;
   padding: 1rem 1.5rem;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border-left: 4px solid #dc2626;
   margin-bottom: 1.5rem;
   animation: slideDown 0.3s ease;

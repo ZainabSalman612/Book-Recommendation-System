@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getBookDetails, findSimilarBooks } from '../services/bookApi'
+import { getBookCoverUrl } from '../utils/coverImage'
 import '../styles/BookDetailsModal.css'
 
 export default function BookDetailsModal({ book, onClose, onFindSimilar }) {
@@ -43,6 +44,12 @@ export default function BookDetailsModal({ book, onClose, onFindSimilar }) {
   }
 
   const displayDetails = details || book
+  const coverUrl = getBookCoverUrl(displayDetails)
+  const [coverFailed, setCoverFailed] = useState(false)
+
+  useEffect(() => {
+    setCoverFailed(false)
+  }, [coverUrl])
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -54,14 +61,20 @@ export default function BookDetailsModal({ book, onClose, onFindSimilar }) {
         {!loading && (
           <>
             <div className="modal-header">
-              {displayDetails.coverImage && (
-                <img 
-                  src={displayDetails.coverImage} 
-                  alt={displayDetails.title}
-                  className="modal-cover"
-                  onError={(e) => e.target.style.display = 'none'}
-                />
-              )}
+              <div className="modal-cover-wrap">
+                {coverUrl && !coverFailed ? (
+                  <img
+                    src={coverUrl}
+                    alt={`${displayDetails.title} cover`}
+                    className="modal-cover"
+                    onError={() => setCoverFailed(true)}
+                  />
+                ) : (
+                  <div className="modal-cover-placeholder" aria-hidden="true">
+                    <span className="placeholder-icon" />
+                  </div>
+                )}
+              </div>
               <div className="modal-title-section">
                 <h2>{displayDetails.title}</h2>
                 <p className="modal-author">{displayDetails.author}</p>
