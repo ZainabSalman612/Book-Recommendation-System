@@ -20,7 +20,7 @@ export default function Pagination({
       <p className="pagination-status">
         Page <strong>{currentPage}</strong> of <strong>{totalPages.toLocaleString()}</strong>
         <span className="pagination-range">
-          · showing {rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()} of{' '}
+          showing {rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()} of{' '}
           {totalResults.toLocaleString()}
         </span>
       </p>
