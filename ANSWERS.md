@@ -84,7 +84,6 @@ useEffect(() => {
 |------|---------------------------|------------------|------------------------|
 | **Cursor (Claude / Auto)** | UI polish: spacing, header, cards, dark mode, responsive layout | CSS and layout updates across `App.css`, `BookCard.css`, `SearchBar.css`, etc. | Toned down bright gradients and emoji-heavy header; aligned with a minimal production look per my preference. |
 | **Cursor** | Fix covers not showing on cards | `coverImage.js` helpers, `BookCard.jsx` load/error logic, backend `cover_i` handling | Kept modular utils; added cached-image `complete` check because AI’s first fix didn’t address that browser behavior. |
-| **Cursor** | README / ANSWERS for assessment | Draft structure for setup and five questions | Rewrote to match exact assessment headings, current file paths, and real line numbers after refactors. |
 | **Earlier AI assist** | Initial project scaffold | React components, Express routes, debounce hook | Reworked cover pipeline (`cover_i` not `cover_id`), caching in routes, and validation messages to match Open Library’s actual fields. |
 
 **Not delegated to AI:** choice of Open Library, feature set (search / details / similar), commit strategy, and manual testing (timeout, bad input, backend down).
