@@ -1,0 +1,134 @@
+const express = require('express');
+const axios = require('axios');
+const { validateSearchInput, buildOpenLibraryQuery, formatBookResponse, getRandomBooks } = require('../utils/bookService');
+
+const router = express.Router();
+const OPEN_LIBRARY_API = 'https://openlibrary.org';
+const API_TIMEOUT = 8000;
+
+/**
+ * GET /api/books/search
+ * Query params: q (search term), type (title/author/subject), limit (optional, default 20)
+ */
+router.get('/search', async (req, res) => {
+  try {
+    const { q, type = 'title', limit = 20 } = req.query;
+
+    // Validate input
+    const validation = validateSearchInput(q, type, limit);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    // Build query string for Open Library API
+    const query = buildOpenLibraryQuery(q, type);
+    const url = `${OPEN_LIBRARY_API}/search.json?${query}&limit=${limit}`;
+
+    // Fetch data with timeout
+    const response = await axios.get(url, { timeout: API_TIMEOUT });
+
+    if (!response.data.docs || response.data.docs.length === 0) {
+      return res.json({ books: [], message: 'No books found' });
+    }
+
+    // Format and return results
+    const books = response.data.docs.map(doc => formatBookResponse(doc));
+    res.json({ books, total: response.data.numFound });
+  } catch (error) {
+    // Handle specific error types
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return res.status(504).json({ error: 'API request timeout. Please try again.' });
+    }
+    if (error.response?.status === 429) {
+      return res.status(429).json({ error: 'Rate limited. Please try again in a moment.' });
+    }
+    if (error.message.includes('ECONNREFUSED')) {
+      return res.status(503).json({ error: 'Open Library API is currently unavailable' });
+    }
+    res.status(500).json({ error: 'Failed to search books' });
+  }
+});
+
+/**
+ * GET /api/books/details/:id
+ * Fetch detailed information about a specific book
+ */
+router.get('/details/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Invalid book ID' });
+    }
+
+    const url = `${OPEN_LIBRARY_API}/works/${id}.json`;
+    const response = await axios.get(url, { timeout: API_TIMEOUT });
+
+    const book = response.data;
+    const details = {
+      id: book.key,
+      title: book.title || 'Unknown Title',
+      description: book.description?.value || book.description || null,
+      subjects: book.subjects || [],
+      editions: book.editions_count || 0,
+      firstPublishYear: book.first_publish_date ? new Date(book.first_publish_date).getFullYear() : null,
+      authors: book.authors?.map(a => a.name) || [],
+      coverImage: book.covers?.[0] ? `https://covers.openlibrary.org/b/id/${book.covers[0]}-M.jpg` : null
+    };
+
+    res.json(details);
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'API request timeout' });
+    }
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: 'Book not found' });
+    }
+    res.status(500).json({ error: 'Failed to fetch book details' });
+  }
+});
+
+/**
+ * GET /api/books/similar/:id
+ * Find similar books based on subjects or author
+ */
+router.get('/similar/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Invalid book ID' });
+    }
+
+    // Fetch the original book to get subjects/authors
+    const url = `${OPEN_LIBRARY_API}/works/${id}.json`;
+    const response = await axios.get(url, { timeout: API_TIMEOUT });
+
+    const book = response.data;
+    const subjects = book.subjects?.slice(0, 3) || [];
+
+    if (subjects.length === 0) {
+      // If no subjects, return random books as fallback
+      return res.json({ books: getRandomBooks(), message: 'No similar books found, showing random recommendations' });
+    }
+
+    // Search by primary subject
+    const primarySubject = subjects[0];
+    const searchUrl = `${OPEN_LIBRARY_API}/search.json?subject=${encodeURIComponent(primarySubject)}&limit=10`;
+
+    const similarResponse = await axios.get(searchUrl, { timeout: API_TIMEOUT });
+    const similarBooks = similarResponse.data.docs
+      .filter(doc => doc.key !== `/works/${id}`) // Exclude original book
+      .slice(0, 5)
+      .map(doc => formatBookResponse(doc));
+
+    res.json({ books: similarBooks, baseSubject: primarySubject });
+  } catch (error) {
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'API request timeout' });
+    }
+    res.status(500).json({ error: 'Failed to find similar books' });
+  }
+});
+
+module.exports = router;
