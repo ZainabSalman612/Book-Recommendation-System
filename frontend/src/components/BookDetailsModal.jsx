@@ -76,7 +76,33 @@ export default function BookDetailsModal({ book, onClose, onFindSimilar }) {
           </div>
           <div className="modal-title-section">
             <h2>{displayDetails.title}</h2>
-            <p className="modal-author">{displayDetails.author || displayDetails.authors?.[0]}</p>
+            {(displayDetails.author || displayDetails.authors?.[0]) && (
+              <p className="modal-author">by {displayDetails.author || displayDetails.authors?.[0]}</p>
+            )}
+
+            <div className="modal-metadata-grid">
+              {displayDetails.firstPublishYear && (
+                <div className="modal-info">
+                  <strong>First Published:</strong> <span>{displayDetails.firstPublishYear}</span>
+                </div>
+              )}
+
+              {(displayDetails.editionCount > 0 || displayDetails.editions > 0) && (
+                <div className="modal-info">
+                  <strong>Editions:</strong> <span>{displayDetails.editionCount || displayDetails.editions}</span>
+                </div>
+              )}
+            </div>
+
+            {displayDetails.subjects && displayDetails.subjects.length > 0 && (
+              <div className="modal-subjects-wrap">
+                <div className="subjects-list">
+                  {displayDetails.subjects.slice(0, 4).map((subject, idx) => (
+                    <span key={idx} className="subject-badge">{subject}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -98,29 +124,6 @@ export default function BookDetailsModal({ book, onClose, onFindSimilar }) {
               <p className="no-description">No synopsis available for this work.</p>
             )}
           </div>
-
-          {displayDetails.subjects && displayDetails.subjects.length > 0 && (
-            <div className="modal-section">
-              <h3>Subjects</h3>
-              <div className="subjects-list">
-                {displayDetails.subjects.slice(0, 10).map((subject, idx) => (
-                  <span key={idx} className="subject-badge">{subject}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {displayDetails.firstPublishYear && (
-            <p className="modal-info">
-              <strong>First Published:</strong> {displayDetails.firstPublishYear}
-            </p>
-          )}
-
-          {(displayDetails.editionCount > 0 || displayDetails.editions > 0) && (
-            <p className="modal-info">
-              <strong>Editions:</strong> {displayDetails.editionCount || displayDetails.editions}
-            </p>
-          )}
         </div>
 
         <div className="modal-footer">
@@ -130,7 +133,7 @@ export default function BookDetailsModal({ book, onClose, onFindSimilar }) {
               onClick={handleFindSimilar}
               disabled={findingSimilar || loading}
             >
-              {findingSimilar ? 'Finding Similar Books...' : 'Find Similar Books 🔍'}
+              {findingSimilar ? 'Finding Similar Books...' : 'Find Similar Books'}
             </button>
           )}
           <button className="close-btn" onClick={onClose}>Close</button>
