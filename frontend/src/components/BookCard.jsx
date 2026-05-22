@@ -58,7 +58,10 @@ export default function BookCard({ book, onSelect }) {
             className={`cover-placeholder ${coverUrl && !imageFailed ? 'cover-placeholder--loading' : ''}`}
             aria-hidden="true"
           >
-            <span className="placeholder-icon" />
+            <svg className="placeholder-svg-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '2rem', height: '2rem', color: 'var(--cover-placeholder-icon)' }}>
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
             {coverUrl && !imageFailed && !imageLoaded && (
               <span className="placeholder-skeleton" />
             )}

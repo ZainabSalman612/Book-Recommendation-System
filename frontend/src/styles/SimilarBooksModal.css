@@ -5,39 +5,50 @@
 
 .similar-modal .modal-header {
   flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
   border-bottom: 1px solid var(--border-color);
+  padding: 2rem 2.25rem 1.5rem;
 }
 
 .similar-modal .modal-header h2 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .base-subject {
   color: var(--text-gray);
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
 }
 
 .similar-books-grid {
-  padding: 2rem;
+  padding: 2.25rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1.25rem;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
 .no-results {
   grid-column: 1 / -1;
   text-align: center;
   color: var(--text-gray);
-  padding: 2rem;
+  padding: 3rem 2rem;
+  font-size: 0.95rem;
+  font-style: italic;
 }
 
 @media (max-width: 640px) {
   .similar-modal .modal-header {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem 1.25rem;
+    align-items: center;
+    text-align: center;
   }
 
   .similar-books-grid {
-    padding: 1rem;
+    padding: 1.5rem;
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
   }
 }
