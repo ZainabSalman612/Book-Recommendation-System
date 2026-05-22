@@ -6,7 +6,7 @@ export async function searchBooks(query, type = 'title', limit = 20) {
   try {
     const response = await axios.get(`${API_BASE}/books/search`, {
       params: { q: query, type, limit },
-      timeout: 10000
+      timeout: 8000  // Reduced from 10s
     })
     return {
       books: response.data.books || [],
@@ -23,7 +23,7 @@ export async function searchBooks(query, type = 'title', limit = 20) {
 export async function getBookDetails(id) {
   try {
     const response = await axios.get(`${API_BASE}/books/details/${id}`, {
-      timeout: 10000
+      timeout: 7000  // Reduced from 10s
     })
     return response.data
   } catch (error) {
@@ -34,7 +34,7 @@ export async function getBookDetails(id) {
 export async function findSimilarBooks(id) {
   try {
     const response = await axios.get(`${API_BASE}/books/similar/${id}`, {
-      timeout: 10000
+      timeout: 8000  // Reduced from 10s
     })
     return {
       books: response.data.books || [],

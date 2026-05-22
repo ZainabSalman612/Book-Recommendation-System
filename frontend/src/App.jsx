@@ -83,9 +83,12 @@ function App() {
   return (
     <div className={`app ${darkMode ? 'dark' : 'light'}`}>
       <header className="header">
+        <div className="header-background"></div>
         <div className="header-content">
-          <h1>📚 Book Finder</h1>
-          <p>Discover your next great read</p>
+          <div className="header-title-section">
+            <h1>📚 Book Finder</h1>
+            <p className="header-tagline">Discover your next great read</p>
+          </div>
           <button 
             className="dark-mode-toggle"
             onClick={() => setDarkMode(!darkMode)}

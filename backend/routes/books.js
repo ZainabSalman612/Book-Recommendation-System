@@ -4,7 +4,27 @@ const { validateSearchInput, buildOpenLibraryQuery, formatBookResponse, getRando
 
 const router = express.Router();
 const OPEN_LIBRARY_API = 'https://openlibrary.org';
-const API_TIMEOUT = 8000;
+const API_TIMEOUT = 5000; // Reduced from 8s to 5s
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Simple in-memory cache
+const searchCache = new Map();
+const detailsCache = new Map();
+
+// Cache cleanup interval (every 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of searchCache) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      searchCache.delete(key);
+    }
+  }
+  for (const [key, value] of detailsCache) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      detailsCache.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
 
 /**
  * GET /api/books/search
@@ -20,12 +40,24 @@ router.get('/search', async (req, res) => {
       return res.status(400).json({ error: validation.error });
     }
 
+    // Check cache first
+    const cacheKey = `${q}:${type}:${limit}`;
+    if (searchCache.has(cacheKey)) {
+      const cached = searchCache.get(cacheKey);
+      return res.json({ ...cached.data, cached: true });
+    }
+
     // Build query string for Open Library API
     const query = buildOpenLibraryQuery(q, type);
     const url = `${OPEN_LIBRARY_API}/search.json?${query}&limit=${limit}`;
 
     // Fetch data with timeout
-    const response = await axios.get(url, { timeout: API_TIMEOUT });
+    const response = await axios.get(url, { 
+      timeout: API_TIMEOUT,
+      headers: {
+        'Accept-Encoding': 'gzip, deflate'
+      }
+    });
 
     if (!response.data.docs || response.data.docs.length === 0) {
       return res.json({ books: [], message: 'No books found' });
@@ -33,7 +65,12 @@ router.get('/search', async (req, res) => {
 
     // Format and return results
     const books = response.data.docs.map(doc => formatBookResponse(doc));
-    res.json({ books, total: response.data.numFound });
+    const responseData = { books, total: response.data.numFound };
+    
+    // Cache the result
+    searchCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+    
+    res.json(responseData);
   } catch (error) {
     // Handle specific error types
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
@@ -61,10 +98,27 @@ router.get('/details/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid book ID' });
     }
 
+    // Check cache first
+    if (detailsCache.has(id)) {
+      const cached = detailsCache.get(id);
+      return res.json({ ...cached.data, cached: true });
+    }
+
     const url = `${OPEN_LIBRARY_API}/works/${id}.json`;
-    const response = await axios.get(url, { timeout: API_TIMEOUT });
+    const response = await axios.get(url, { 
+      timeout: API_TIMEOUT,
+      headers: {
+        'Accept-Encoding': 'gzip, deflate'
+      }
+    });
 
     const book = response.data;
+    const coverImage = book.covers?.[0]
+      ? `https://covers.openlibrary.org/b/id/${book.covers[0]}-L.jpg`
+      : book.isbn?.[0]
+      ? `https://covers.openlibrary.org/b/isbn/${book.isbn[0]}-L.jpg`
+      : null;
+
     const details = {
       id: book.key,
       title: book.title || 'Unknown Title',
@@ -73,8 +127,11 @@ router.get('/details/:id', async (req, res) => {
       editions: book.editions_count || 0,
       firstPublishYear: book.first_publish_date ? new Date(book.first_publish_date).getFullYear() : null,
       authors: book.authors?.map(a => a.name) || [],
-      coverImage: book.covers?.[0] ? `https://covers.openlibrary.org/b/id/${book.covers[0]}-M.jpg` : null
+      coverImage
     };
+
+    // Cache the result
+    detailsCache.set(id, { data: details, timestamp: Date.now() });
 
     res.json(details);
   } catch (error) {

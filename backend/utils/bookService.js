@@ -54,10 +54,34 @@ function formatBookResponse(doc) {
   // Handle missing key
   const id = doc.key?.replace('/works/', '') || null;
 
-  // Handle cover image - missing images is a common edge case
+  // Handle cover image - try multiple strategies to get cover
   let coverImage = null;
-  if (doc.cover_id) {
+  
+  // Strategy 1: Try cover_i from search results (primary source)
+  if (doc.cover_i) {
+    coverImage = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
+  }
+  // Strategy 2: Try cover_id if Open Library returns it
+  else if (doc.cover_id) {
     coverImage = `https://covers.openlibrary.org/b/id/${doc.cover_id}-M.jpg`;
+  }
+  // Strategy 3: Try covers array from detailed response
+  else if (doc.covers && Array.isArray(doc.covers) && doc.covers.length > 0) {
+    coverImage = `https://covers.openlibrary.org/b/id/${doc.covers[0]}-M.jpg`;
+  }
+  // Strategy 4: Try using ISBN if available
+  else if (doc.isbn && doc.isbn.length > 0) {
+    const isbn = doc.isbn[0];
+    coverImage = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
+  }
+  // Strategy 5: Try using first_isbn if available
+  else if (doc.first_isbn) {
+    coverImage = `https://covers.openlibrary.org/b/isbn/${doc.first_isbn}-M.jpg`;
+  }
+  // Strategy 6: Try OCLC/other identifiers
+  else if (doc.oclc_numbers && doc.oclc_numbers.length > 0) {
+    const oclc = doc.oclc_numbers[0];
+    coverImage = `https://covers.openlibrary.org/b/oclc/${oclc}-M.jpg`;
   }
 
   // Parse first publish year safely

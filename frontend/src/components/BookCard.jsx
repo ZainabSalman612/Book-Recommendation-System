@@ -1,28 +1,41 @@
+import { useState } from 'react'
 import '../styles/BookCard.css'
 
 export default function BookCard({ book, onSelect }) {
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageFailed, setImageFailed] = useState(false)
+
   const handleClick = () => {
     onSelect(book)
+  }
+
+  const handleImageLoad = () => {
+    setImageLoaded(true)
+  }
+
+  const handleImageError = () => {
+    setImageFailed(true)
   }
 
   return (
     <div className="book-card" onClick={handleClick} role="button" tabIndex={0}>
       <div className="book-cover">
-        {book.coverImage ? (
+        {book.coverImage && !imageFailed ? (
           <img 
             src={book.coverImage} 
             alt={`${book.title} cover`}
             loading="lazy"
-            onError={(e) => {
-              // Handle missing cover images gracefully (edge case)
-              e.target.style.display = 'none'
-              e.target.nextElementSibling.style.display = 'flex'
-            }}
+            className={`cover-image ${imageLoaded ? 'loaded' : 'loading'}`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
           />
         ) : null}
-        <div className="cover-placeholder" style={book.coverImage ? { display: 'none' } : {}}>
-          📖
-        </div>
+        {(!book.coverImage || imageFailed || !imageLoaded) && (
+          <div className="cover-placeholder">
+            <span className="placeholder-text">📖</span>
+            {!imageLoaded && book.coverImage && <span className="placeholder-loading">Loading...</span>}
+          </div>
+        )}
       </div>
 
       <div className="book-info">
