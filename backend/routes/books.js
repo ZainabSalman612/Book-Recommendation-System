@@ -7,6 +7,10 @@ const router = express.Router();
 const OPEN_LIBRARY_API = 'https://openlibrary.org';
 const API_TIMEOUT = 5000; // Reduced from 8s to 5s
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const OPEN_LIBRARY_HEADERS = {
+  'Accept-Encoding': 'gzip, deflate',
+  'User-Agent': 'BookFinderProfessional/1.0.0 (contact: support@bookfinderpro.com)'
+};
 
 // Simple in-memory cache
 const searchCache = new Map();
@@ -53,9 +57,7 @@ router.get('/search', async (req, res) => {
 
     const response = await axios.get(url, { 
       timeout: API_TIMEOUT,
-      headers: {
-        'Accept-Encoding': 'gzip, deflate'
-      }
+      headers: OPEN_LIBRARY_HEADERS
     });
 
     const total = response.data.numFound ?? 0;
@@ -113,9 +115,7 @@ router.get('/details/:id', async (req, res) => {
     const url = `${OPEN_LIBRARY_API}/works/${id}.json`;
     const response = await axios.get(url, { 
       timeout: API_TIMEOUT,
-      headers: {
-        'Accept-Encoding': 'gzip, deflate'
-      }
+      headers: OPEN_LIBRARY_HEADERS
     });
 
     const book = response.data;
@@ -162,7 +162,7 @@ router.get('/similar/:id', async (req, res) => {
 
     // Fetch the original book to get subjects/authors
     const url = `${OPEN_LIBRARY_API}/works/${id}.json`;
-    const response = await axios.get(url, { timeout: API_TIMEOUT });
+    const response = await axios.get(url, { timeout: API_TIMEOUT, headers: OPEN_LIBRARY_HEADERS });
 
     const book = response.data;
     const subjects = book.subjects?.slice(0, 3) || [];
@@ -176,7 +176,7 @@ router.get('/similar/:id', async (req, res) => {
     const primarySubject = subjects[0];
     const searchUrl = `${OPEN_LIBRARY_API}/search.json?subject=${encodeURIComponent(primarySubject)}&limit=10`;
 
-    const similarResponse = await axios.get(searchUrl, { timeout: API_TIMEOUT });
+    const similarResponse = await axios.get(searchUrl, { timeout: API_TIMEOUT, headers: OPEN_LIBRARY_HEADERS });
     const similarBooks = similarResponse.data.docs
       .filter(doc => doc.key !== `/works/${id}`) // Exclude original book
       .slice(0, 5)
