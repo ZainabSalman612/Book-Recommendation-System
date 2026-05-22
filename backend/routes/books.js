@@ -29,30 +29,28 @@ setInterval(() => {
 
 /**
  * GET /api/books/search
- * Query params: q (search term), type (title/author/subject), limit (optional, default 20)
+ * Query params: q, type (title/author/subject), limit (default 20), offset (default 0)
  */
 router.get('/search', async (req, res) => {
   try {
-    const { q, type = 'title', limit = 20 } = req.query;
+    const { q, type = 'title', limit = 20, offset = 0 } = req.query;
 
-    // Validate input
-    const validation = validateSearchInput(q, type, limit);
+    const validation = validateSearchInput(q, type, limit, offset);
     if (!validation.valid) {
       return res.status(400).json({ error: validation.error });
     }
 
-    // Check cache first
-    const cacheKey = `${q}:${type}:${limit}`;
+    const { limit: parsedLimit, offset: parsedOffset, query: trimmedQuery } = validation;
+
+    const cacheKey = `${trimmedQuery}:${type}:${parsedLimit}:${parsedOffset}`;
     if (searchCache.has(cacheKey)) {
       const cached = searchCache.get(cacheKey);
       return res.json({ ...cached.data, cached: true });
     }
 
-    // Build query string for Open Library API
-    const query = buildOpenLibraryQuery(q, type);
-    const url = `${OPEN_LIBRARY_API}/search.json?${query}&limit=${limit}`;
+    const query = buildOpenLibraryQuery(trimmedQuery, type);
+    const url = `${OPEN_LIBRARY_API}/search.json?${query}&limit=${parsedLimit}&offset=${parsedOffset}`;
 
-    // Fetch data with timeout
     const response = await axios.get(url, { 
       timeout: API_TIMEOUT,
       headers: {
@@ -60,15 +58,22 @@ router.get('/search', async (req, res) => {
       }
     });
 
-    if (!response.data.docs || response.data.docs.length === 0) {
-      return res.json({ books: [], message: 'No books found' });
+    const total = response.data.numFound ?? 0;
+    const docs = response.data.docs || [];
+    const books = docs.map(doc => formatBookResponse(doc));
+
+    const responseData = {
+      books,
+      total,
+      offset: parsedOffset,
+      limit: parsedLimit,
+      hasMore: parsedOffset + books.length < total
+    };
+
+    if (books.length === 0) {
+      responseData.message = 'No books found';
     }
 
-    // Format and return results
-    const books = response.data.docs.map(doc => formatBookResponse(doc));
-    const responseData = { books, total: response.data.numFound };
-    
-    // Cache the result
     searchCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
     
     res.json(responseData);

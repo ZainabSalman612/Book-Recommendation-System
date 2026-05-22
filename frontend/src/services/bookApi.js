@@ -2,20 +2,29 @@ import axios from 'axios'
 
 const API_BASE = 'http://localhost:5000/api'
 
-export async function searchBooks(query, type = 'title', limit = 20) {
+export const PAGE_SIZE = 20
+
+export async function searchBooks(query, type = 'title', { limit = PAGE_SIZE, offset = 0 } = {}) {
   try {
     const response = await axios.get(`${API_BASE}/books/search`, {
-      params: { q: query, type, limit },
-      timeout: 8000  // Reduced from 10s
+      params: { q: query, type, limit, offset },
+      timeout: 8000
     })
     return {
       books: response.data.books || [],
-      total: response.data.total || 0
+      total: response.data.total ?? 0,
+      offset: response.data.offset ?? offset,
+      limit: response.data.limit ?? limit,
+      hasMore: response.data.hasMore ?? false
     }
   } catch (error) {
     return {
       error: handleApiError(error),
-      books: []
+      books: [],
+      total: 0,
+      offset: 0,
+      limit,
+      hasMore: false
     }
   }
 }

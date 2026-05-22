@@ -3,7 +3,7 @@ const { getCoverImageUrl, getCoverId } = require('./coverImage');
 /**
  * Validate search input parameters
  */
-function validateSearchInput(query, type, limit) {
+function validateSearchInput(query, type, limit, offset = 0) {
   if (!query || typeof query !== 'string') {
     return { valid: false, error: 'Search query is required' };
   }
@@ -27,7 +27,16 @@ function validateSearchInput(query, type, limit) {
     return { valid: false, error: 'Limit must be between 1 and 100' };
   }
 
-  return { valid: true };
+  const parsedOffset = parseInt(offset, 10);
+  if (isNaN(parsedOffset) || parsedOffset < 0) {
+    return { valid: false, error: 'Offset must be a non-negative number' };
+  }
+
+  if (parsedOffset > 10000) {
+    return { valid: false, error: 'Offset too large' };
+  }
+
+  return { valid: true, limit: parsedLimit, offset: parsedOffset, query: trimmedQuery };
 }
 
 /**

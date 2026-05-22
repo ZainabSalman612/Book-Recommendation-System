@@ -93,15 +93,15 @@ useEffect(() => {
 
 ## 5. Honest gap
 
-**Gap:** No automated tests (unit or E2E) and no search pagination.
+**Gap:** No automated tests (unit or E2E).
 
-Search is capped at 20 results with no “load more” or pages, so large result sets are incomplete. Everything is verified manually.
+Search supports pagination (`offset` / `limit` on the API and numbered **page controls** with Previous/Next in the UI), but behavior is only verified manually.
 
 **With one more day I would:**
 
-1. Add pagination (`offset` on Open Library + “Load more” in the UI) — see `backend/routes/books.js` around the `limit` query param.
-2. Add a few API tests (e.g. Vitest + supertest) for validation, timeout mapping, and `formatBookResponse` cover URLs.
-3. Optionally persist dark mode in `localStorage` (currently session-only via React state).
+1. Add API tests (e.g. Vitest + supertest) for validation, timeout mapping, and cover URL formatting.
+2. Optionally persist dark mode in `localStorage` (currently session-only via React state).
+3. Deduplicate by `id` when appending pages if Open Library ever returns overlaps at page boundaries.
 
 ---
 

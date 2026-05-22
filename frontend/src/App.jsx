@@ -1,23 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import SearchBar from './components/SearchBar'
 import BookGrid from './components/BookGrid'
 import BookDetailsModal from './components/BookDetailsModal'
 import SimilarBooksModal from './components/SimilarBooksModal'
 import LoadingSpinner from './components/LoadingSpinner'
 import ErrorMessage from './components/ErrorMessage'
-import { searchBooks } from './services/bookApi'
+import { searchBooks, PAGE_SIZE } from './services/bookApi'
+import { getTotalPages } from './utils/pagination'
+import Pagination from './components/Pagination'
 import './styles/App.css'
 
 function App() {
   const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchType, setSearchType] = useState('title')
+  const [totalResults, setTotalResults] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
   const [selectedBook, setSelectedBook] = useState(null)
   const [similarBooksData, setSimilarBooksData] = useState(null)
   const [darkMode, setDarkMode] = useState(false)
   const [recentSearches, setRecentSearches] = useState([])
+  const resultsRef = useRef(null)
 
-  // Initialize recent searches from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches')
     if (saved) {
@@ -25,7 +32,6 @@ function App() {
     }
   }, [])
 
-  // Apply dark mode class to document
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add('dark-mode')
@@ -34,7 +40,43 @@ function App() {
     }
   }, [darkMode])
 
-  const handleSearch = async (searchTerm, searchType) => {
+  const totalPages = getTotalPages(totalResults, PAGE_SIZE)
+
+  const fetchPage = async (page, searchTerm, type, { saveRecent = false } = {}) => {
+    const offset = (page - 1) * PAGE_SIZE
+    const result = await searchBooks(searchTerm, type, { offset, limit: PAGE_SIZE })
+
+    if (result.error) {
+      setError(result.error)
+      return false
+    }
+
+    if (result.books.length === 0 && page === 1) {
+      setError(`No books found for "${searchTerm}". Try different keywords.`)
+      setBooks([])
+      setTotalResults(0)
+      setCurrentPage(1)
+      return false
+    }
+
+    setBooks(result.books)
+    setTotalResults(result.total)
+    setCurrentPage(page)
+    setSearchQuery(searchTerm)
+    setSearchType(type)
+    setError(null)
+
+    if (saveRecent) {
+      const newSearch = `${searchTerm} (${type})`
+      const updated = [newSearch, ...recentSearches.filter(s => s !== newSearch)].slice(0, 5)
+      setRecentSearches(updated)
+      localStorage.setItem('recentSearches', JSON.stringify(updated))
+    }
+
+    return true
+  }
+
+  const handleSearch = async (searchTerm, type) => {
     if (!searchTerm.trim()) {
       setError('Please enter a search term')
       return
@@ -43,31 +85,38 @@ function App() {
     setLoading(true)
     setError(null)
     setBooks([])
+    setTotalResults(0)
+    setCurrentPage(1)
     setSelectedBook(null)
     setSimilarBooksData(null)
 
     try {
-      const result = await searchBooks(searchTerm, searchType)
-
-      if (result.error) {
-        setError(result.error)
-        setBooks([])
-      } else if (result.books.length === 0) {
-        setError(`No books found for "${searchTerm}". Try different keywords.`)
-        setBooks([])
-      } else {
-        setBooks(result.books)
-        // Add to recent searches
-        const newSearch = `${searchTerm} (${searchType})`
-        const updated = [newSearch, ...recentSearches.filter(s => s !== newSearch)].slice(0, 5)
-        setRecentSearches(updated)
-        localStorage.setItem('recentSearches', JSON.stringify(updated))
-      }
+      await fetchPage(1, searchTerm, type, { saveRecent: true })
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
       console.error('Search error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePageChange = async (page) => {
+    if (!searchQuery || page < 1 || page > totalPages || page === currentPage) return
+    if (pageLoading || loading) return
+
+    setPageLoading(true)
+    setError(null)
+
+    try {
+      const ok = await fetchPage(page, searchQuery, searchType)
+      if (ok) {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    } catch (err) {
+      setError('Failed to load this page. Please try again.')
+      console.error('Page change error:', err)
+    } finally {
+      setPageLoading(false)
     }
   }
 
@@ -106,8 +155,8 @@ function App() {
       </header>
 
       <main className="container">
-        <SearchBar 
-          onSearch={handleSearch} 
+        <SearchBar
+          onSearch={handleSearch}
           recentSearches={recentSearches}
         />
 
@@ -117,10 +166,22 @@ function App() {
 
         {!loading && books.length > 0 && (
           <>
-            <div className="results-header">
-              <h2>Found {books.length} book{books.length !== 1 ? 's' : ''}</h2>
+            <div className="results-header" ref={resultsRef}>
+              <h2>{totalResults.toLocaleString()} books found</h2>
             </div>
-            <BookGrid books={books} onSelectBook={handleSelectBook} />
+            <div className={pageLoading ? 'results-grid loading-page' : 'results-grid'}>
+              <BookGrid books={books} onSelectBook={handleSelectBook} />
+            </div>
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalResults={totalResults}
+                pageSize={PAGE_SIZE}
+                loading={pageLoading}
+                onPageChange={handlePageChange}
+              />
+            )}
           </>
         )}
 
@@ -134,8 +195,8 @@ function App() {
       </main>
 
       {selectedBook && (
-        <BookDetailsModal 
-          book={selectedBook} 
+        <BookDetailsModal
+          book={selectedBook}
           onClose={() => setSelectedBook(null)}
           onFindSimilar={handleFindSimilar}
         />

@@ -77,7 +77,7 @@ Book-Recommendation-System-/
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/api/health` | Health check |
-| GET | `/api/books/search?q=&type=&limit=` | Search books |
+| GET | `/api/books/search?q=&type=&limit=&offset=` | Search books (paginated) |
 | GET | `/api/books/details/:id` | Work details |
 | GET | `/api/books/similar/:id` | Similar by subject |
 
