@@ -1,6 +1,6 @@
 # Book Finder — Open Library API Consumer
 
-A full-stack web app built on the free [Open Library API](https://openlibrary.org/developers/api). Search books by title, author, or subject, view details and covers, and discover similar titles — in one place instead of juggling the raw API and cover endpoints.
+A full-stack web app built on the free [Open Library API](https://openlibrary.org/developers/api). Search books by title, author, or subject, view details and covers, and discover similar titles in one place instead of juggling the raw API and cover endpoints.
 
 **Assessment variant:** Public API consumer (no API key required).
 
