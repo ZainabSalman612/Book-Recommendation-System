@@ -1,219 +1,110 @@
-# Assessment Answers
+# Technical Assessment — ANSWERS.md
 
-## 1. Exact Run Instructions
+**Project:** Book Finder (Open Library public API consumer)  
+**Repo:** Book-Recommendation-System-
 
-### Prerequisites
-- Node.js 16+ and npm installed
-- Two terminal windows
+---
 
-### Full Setup (5 minutes)
+## 1. How to run
 
-**Terminal 1 - Start Backend:**
+Exact steps on a fresh machine (after cloning the repo):
+
+**Install & run backend**
+
 ```bash
-cd Book-Recommendation-System-/backend
+cd backend
 npm install
 npm start
 ```
-Expected output: `Server running on http://localhost:5000`
 
-**Terminal 2 - Start Frontend:**
+Expected: `Server running on http://localhost:5000`
+
+**Install & run frontend** (second terminal)
+
 ```bash
-cd Book-Recommendation-System-/frontend
+cd frontend
 npm install
 npm run dev
 ```
-Expected output: `Local: http://localhost:5173`
 
-**Browser:**
-```
-Open http://localhost:5173
-```
+Open the dev URL from the terminal (typically `http://localhost:5173`).
 
-**Test the app:**
-1. Type "the great gatsby" in search
-2. Click a book to see details
-3. Click "Find Similar Books"
-4. Toggle dark mode (🌙 icon)
+**Nothing else to install** beyond Node.js/npm. No API key. Optional: copy `.env.example` to `backend/.env` if you need a custom `PORT` (default `5000`).
+
+**Verify:** search `the great gatsby` → results with covers → click a book → **Find Similar Books** → toggle dark mode.
 
 ---
 
-## 2. Why This Tech Stack Was Chosen
+## 2. Stack choice
 
-### Frontend: React + Vite
-- **React**: Industry standard for interactive UIs. Easy to manage component state, perfect for modal/modal interactions.
-- **Vite**: 10x faster than Webpack for development. HMR (hot reload) makes development smooth. Fast build times.
-- **Zero CSS frameworks**: Vanilla CSS is faster to load, easier to modify, no Tailwind bloat for a simple project.
+**Chosen:** React (Vite) frontend + Node/Express backend + Open Library.
 
-### Backend: Node.js + Express
-- **JavaScript everywhere**: Single language reduces context switching.
-- **Express**: Minimal, unopinionated framework. Perfect for simple REST APIs. Easy to understand and debug.
-- **Async/await**: Clean, readable async patterns throughout codebase.
+**Why this works well here**
 
-### API Integration: Open Library
-- **Free & public**: No auth, no rate limiting for modest usage, perfect for assessment.
-- **Rich data**: Includes descriptions, subjects, edition counts, cover images.
-- **Simple REST API**: Direct JSON responses, easy to consume.
+- **Open Library** is free, public, and fits the brief (search, works, subjects, covers) with no API key.
+- **Express** is a thin proxy: validation, timeouts, caching, and stable JSON for the UI without exposing the browser to CORS/rate-limit quirks.
+- **React** fits modals, search state, loading/error UI, and a card grid without heavy tooling.
 
-### HTTP Client: Axios
-- **Promise-based**: Works perfectly with async/await throughout the app.
-- **Timeout support**: Built-in request timeout handling (critical for unreliable APIs).
-- **Interceptors**: Could easily add logging, auth, etc. later.
+**Worse choices (for this task)**
 
-### No External Dependencies (intentional)
-- No UI component libraries: CSS is simpler, smaller bundle
-- No state management (Redux/Zustand): React local state sufficient for this scope
-- No testing framework: Code is simple and verifiable manually
+- **CLI only:** meets “public API” but weaker “useful” UX for browsing covers and similar books.
+- **Frontend-only calling Open Library:** works for demos but harder to enforce timeouts, cache, and consistent error shapes for assessment testing.
+- **Heavy framework (Next, Nest, Redux):** more boilerplate than needed for a focused search + details flow.
 
 ---
 
-## 3. Edge Case: Missing Cover Images Handled Correctly
+## 3. One real edge case
 
-**Problem**: Open Library API returns incomplete data. Some books have no `cover_id`, causing broken image links.
+**Edge case:** Browser **cached book cover images** load before React attaches `onLoad`, so `imageLoaded` stays `false` and the placeholder covers the real cover forever.
 
-**Location**: [frontend/src/components/BookCard.jsx](frontend/src/components/BookCard.jsx#L12-L17)
+**Without handling:** Users only see the placeholder even when `coverImage` is valid (common with lazy/cached `<img>`).
 
-**Code**:
+**Handling:** On mount / when the cover URL changes, check `img.complete` and `naturalWidth`; reset state when the URL changes; use `onError` to fall back without a broken icon.
+
+**File & lines:** `frontend/src/components/BookCard.jsx` — lines **16–21** (cached-complete check) and **11–14** (reset when `coverUrl` changes).
+
 ```jsx
-onError={(e) => {
-  // Handle missing cover images gracefully (edge case)
-  e.target.style.display = 'none'
-  e.target.nextElementSibling.style.display = 'flex'
-}}
+useEffect(() => {
+  const img = imgRef.current
+  if (img?.complete && img.naturalWidth > 0) {
+    setImageLoaded(true)
+  }
+}, [coverUrl])
 ```
 
-**How it works**:
-1. Image loads if `coverImage` URL exists
-2. If Open Library server returns 404 or invalid image, `onError` fires
-3. Image element is hidden
-4. Fallback emoji placeholder (📖) is shown instead
-5. User sees something instead of broken image
+**Related:** Cover URLs are built from `cover_i` via `frontend/src/utils/coverImage.js` and `backend/utils/coverImage.js` (`https://covers.openlibrary.org/b/id/{cover_i}-M.jpg`).
 
-**Backend also handles it**: [backend/utils/bookService.js](backend/utils/bookService.js#L53-L56)
-
-```javascript
-// Handle cover image - missing images is a common edge case
-let coverImage = null;
-if (doc.cover_id) {
-  coverImage = `https://covers.openlibrary.org/b/id/${doc.cover_id}-M.jpg`;
-}
-```
-
-Returns `null` for `coverImage` if not available, so frontend knows not to attempt loading.
+**Other edge cases (also implemented):** invalid search input — `backend/utils/bookService.js` lines **6–28**; API timeout — `backend/routes/books.js` lines **77–78**.
 
 ---
 
-## 4. AI Usage Disclosure
+## 4. AI usage
 
-**Claude Haiku 4.5 was used to**:
-- Generate initial project structure and component templates
-- Write boilerplate React hooks (useDebounce)
-- Create CSS styling for responsive layout
-- Generate API error handling patterns
-- Write README documentation
-- Generate this assessment document
+| Tool | What I asked / used it for | What it produced | What I changed and why |
+|------|---------------------------|------------------|------------------------|
+| **Cursor (Claude / Auto)** | UI polish: spacing, header, cards, dark mode, responsive layout | CSS and layout updates across `App.css`, `BookCard.css`, `SearchBar.css`, etc. | Toned down bright gradients and emoji-heavy header; aligned with a minimal production look per my preference. |
+| **Cursor** | Fix covers not showing on cards | `coverImage.js` helpers, `BookCard.jsx` load/error logic, backend `cover_i` handling | Kept modular utils; added cached-image `complete` check because AI’s first fix didn’t address that browser behavior. |
+| **Cursor** | README / ANSWERS for assessment | Draft structure for setup and five questions | Rewrote to match exact assessment headings, current file paths, and real line numbers after refactors. |
+| **Earlier AI assist** | Initial project scaffold | React components, Express routes, debounce hook | Reworked cover pipeline (`cover_i` not `cover_id`), caching in routes, and validation messages to match Open Library’s actual fields. |
 
-**NOT used for**:
-- Core algorithm design (simple search/filter)
-- Business logic decisions (what features to build, why)
-- Debugging or problem-solving
-- UI/UX decisions (debounce timing, modal design)
-
-**Human contribution**:
-- Project architecture and folder structure
-- API integration logic and error scenarios
-- Search input validation and debounce implementation
-- Dark mode and recent searches features
-- All edge case handling and robustness improvements
-- Testing and verification
+**Not delegated to AI:** choice of Open Library, feature set (search / details / similar), commit strategy, and manual testing (timeout, bad input, backend down).
 
 ---
 
-## 5. One Honest Improvement Gap
+## 5. Honest gap
 
-### Gap: No Pagination / Infinite Scroll
+**Gap:** No automated tests (unit or E2E) and no search pagination.
 
-**Current limitation**: 
-- Search returns max 20 results (hardcoded limit)
-- No way to see page 2, 3, etc.
-- User can't browse full result set
+Search is capped at 20 results with no “load more” or pages, so large result sets are incomplete. Everything is verified manually.
 
-**Why it's missing**:
-- Open Library API supports `offset` parameter
-- Pagination UI (page buttons) adds complexity
-- Time constraint: decided to focus on core features
+**With one more day I would:**
 
-**How to add it**:
-1. Backend: Add `offset` parameter to `/search` route
-2. Backend: Return `{ books, numFound, offset }` 
-3. Frontend: Add "Load More" or page buttons
-4. Frontend: Append new results to existing list (infinite scroll) OR replace with new page
-
-**Code location where this should go**:
-[backend/routes/books.js](backend/routes/books.js#L17) - Line 17 `const { q, type = 'title', limit = 20 } = req.query;` should include `offset`
-
-**Effort**: 2-3 hours for polished pagination UI
+1. Add pagination (`offset` on Open Library + “Load more” in the UI) — see `backend/routes/books.js` around the `limit` query param.
+2. Add a few API tests (e.g. Vitest + supertest) for validation, timeout mapping, and `formatBookResponse` cover URLs.
+3. Optionally persist dark mode in `localStorage` (currently session-only via React state).
 
 ---
 
-## 6. Quality Assurance Checklist
+## Commit history note
 
-- ✅ All imports verified (no missing dependencies)
-- ✅ App runs without errors from scratch
-- ✅ Search works for title, author, subject
-- ✅ Empty results show friendly message
-- ✅ API timeouts handled (8s timeout set)
-- ✅ Open Library API failure gracefully caught
-- ✅ Missing images show fallback placeholder
-- ✅ Invalid input rejected with user message
-- ✅ Recent searches saved to localStorage
-- ✅ Dark mode toggles smoothly
-- ✅ Modal close buttons work
-- ✅ Responsive design tested on mobile
-- ✅ No secrets in .env (using .env.example)
-- ✅ .gitignore excludes node_modules
-- ✅ README has complete setup instructions
-- ✅ Code is modular and readable
-
----
-
-## 7. Performance Notes
-
-- **First Load**: ~2MB (React + axios) - acceptable
-- **Search Response**: <2s typical for Open Library (cached)
-- **Image Loading**: Lazy loaded, ~50KB per book cover
-- **Debounce**: 500ms prevents excessive requests during typing
-- **Dark Mode**: CSS class toggle, no re-renders
-
----
-
-## 8. Testing Instructions
-
-### Test Search
-1. Search for "1984" → Should show George Orwell book
-2. Change search type to "author" → Search "Margaret Atwood"
-3. Change type to "subject" → Search "science fiction"
-
-### Test Error Handling
-1. Search for random garbage like "xyzabc123" → "No books found" message
-2. Disconnect internet → Error about connection
-3. Unplug backend (close backend terminal) → Cannot connect to server error
-
-### Test UI
-1. Click any book → Modal opens with details
-2. Click "Find Similar Books" → Related books load
-3. Click close button → Modal closes
-4. Toggle dark mode → Colors invert
-5. Resize browser → Layout adapts to mobile
-
----
-
-## Conclusion
-
-This app demonstrates:
-- Clean architecture (separation of concerns)
-- Robust error handling (real-world scenarios)
-- Modern React patterns (hooks, async/await)
-- Responsive design (works on all devices)
-- Code quality (readable, maintainable, documented)
-
-Ready for technical assessment. 🚀
+This repo has multiple commits (scaffold → features/cache → UI/cover fixes), not a single dump commit. Reviewers can run `git log --oneline` to see progression.
